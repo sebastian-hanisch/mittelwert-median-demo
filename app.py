@@ -96,7 +96,7 @@ st.markdown(
     """
 **Wurzel der Reihe „Mittelwerte und Lagemaße“.** Mittel und Median sind **Minimierer**: das Mittel der Summe der Abstände zum Quadrat, der Median der Summe der Beträge, Quantil und Expektile ihre schiefen Verwandten.
 Die Demo hat zwei Reiter. **🧮 Rechnen:** Wie genau liefert der Rechner das Mittel von bis zu fünf Millionen Zeitstempeln oder Koordinaten, wenn die Summe fortlaufend in float32 entsteht?
-**🎯 Wählen:** Welche Zahl will ich überhaupt (Summe planen oder typischen Fall nennen), was kostet es, eine andere zu schätzen, und wann zieht die Schrumpfung nach James und Stein das Gesamtrisiko nach unten, einzelne Lager aber nach oben?
+**🎯 Wählen:** Welche Zahl will ich überhaupt (Summe planen oder typischen Fall nennen), was kostet es, eine andere zu schätzen, und wann zieht die Schrumpfung nach James und Stein das Gesamtrisiko nach unten, einzelne Lager aber nach oben? Wer die Frage zuerst ohne Fachbegriffe verstehen will, öffnet „💬 In einfachen Worten“.
 Abgrenzung: [kmeans-demo](https://github.com/sebastian-hanisch/kmeans-demo) (Mittelwert gegen Medoid bei Ausreißern), [exponential-smoothing-demo](https://github.com/sebastian-hanisch/exponential-smoothing-demo) (festes Gedächtnis statt Mittel aller),
 `rangintervalle-demo` (Schrumpfung bei Bradley-Terry-Stärken), [forecast-combination-demo](https://github.com/sebastian-hanisch/forecast-combination-demo) (Median als Kombinationsregel),
 [verweilzeit-demo](https://github.com/sebastian-hanisch/verweilzeit-demo) (Median oder Quantil?), [newsvendor-evpi-demo](https://github.com/sebastian-hanisch/newsvendor-evpi-demo) und [forecast-inventory-demo](https://github.com/sebastian-hanisch/forecast-inventory-demo) (Bestand als Quantil).
@@ -104,6 +104,19 @@ Abgrenzung: [kmeans-demo](https://github.com/sebastian-hanisch/kmeans-demo) (Mit
 Weiter unten: die Experimente **🔬 E1, E2** (Reiter Rechnen) und **E5, E6, E8** sowie die kurzen Tabs **E3, E7** (Reiter Wählen), **🚧 Wo die Annahmen enden** und **📐 Mathematische Formulierung**.
 """
 )
+
+# erklaerseite:einfach:start (erzeugt von tools/set_demo_explainer.py (Website-Repo) aus tools/content/explainers/mittelwert-median-erklaert.json, nicht von Hand ändern)
+with st.expander("💬 In einfachen Worten"):
+    st.markdown(
+        """
+Mit „der Mitte“ der Daten sind zwei Fragen gemeint. **Welche Zahl will ich?** Der **Mittelwert** (der Durchschnitt) eignet sich für eine Gesamtsumme: Anzahl mal Mittelwert. Der **Median** (der mittlere Wert, wenn man alle Werte der Größe nach sortiert) eignet sich für einen typischen Fall. Bei schiefen Lieferzeiten und bei Ausreißern liegen beide weit auseinander.
+
+**Wie genau rechnet der Rechner?** Er summiert Millionen Zahlen mit begrenzter Stellenzahl und kann dabei Stellen verlieren. Hilfreich ist, sich das Gerundete zu merken (Kahan) oder paarweise zu summieren. Alle Ergebnisse stammen aus erzeugten Daten und frei gewählten Beispielen, nicht aus echten Messungen.
+
+[Ausführlich und verständlich erklärt, mit Fachteil](https://sebastianhanisch.net/mittelwert-median-erklaert.html)
+        """
+    )
+# erklaerseite:einfach:end
 
 with st.expander("Was Mittel, Median, Quantil und Expektile minimieren", expanded=True):
     st.markdown(
@@ -190,7 +203,7 @@ with tab_rechnen:
             r"""
 | Verfahren | Was es tut | Was schiefgehen kann |
 |---|---|---|
-| **naiv (fortlaufend)** | $s \leftarrow s + x_i$, jede Zwischensumme auf das Zahlenformat gerundet | Ist $s$ groß gegen $x_i$, geht von $x_i$ die untere Hälfte der Stellen verloren; die Verluste addieren sich |
+| **naiv (fortlaufend)** | $s \leftarrow s + x_i$, jede Zwischensumme auf das Zahlenformat gerundet | Ist $s$ groß gegen $x_i$, gehen von $x_i$ die Stellen unterhalb des Rasters von $s$ verloren (Raster ≈ $s \cdot 2^{-23}$ in float32); die Verluste addieren sich |
 | **numpy.sum** | verhält sich in der Messung wie eine paarweise Summe (der Fehler wächst kaum mit n) | Der genaue Aufbau hängt von der numpy-Version ab und ist hier nicht der Dokumentation entnommen; die Zahlen gelten als Band |
 | **Binärbaum** | erst Nachbarn, dann Nachbarn der Teilsummen | Teilsummen bleiben ähnlich groß wie ihre Summanden: kleiner Fehler, aber mehr Speicher |
 | **verschoben** | $x_1$ abziehen, die Reste fortlaufend summieren, $x_1$ addieren | Hilft nur, wenn $x_1$ typisch ist; ein untypischer erster Wert macht es schlechter (E2) |
@@ -307,7 +320,7 @@ with tab_waehlen:
 | **Mittel** | Wie viel ist es insgesamt, geteilt durch die Anzahl? | Summe durch $n$ | Ein Ausreißer zieht beliebig weit; bei schiefen Verteilungen liegt es über dem typischen Fall |
 | **Median** | Was ist ein typischer Fall? | mittlerer Wert, bei geradem $n$ die Mitte der beiden mittleren | Bei Rundung und Gleichständen springt er (E7); als Schätzer der Summe ist er verzerrt (E6) |
 | **Quantil** $\tau$ | Welchen Wert unterschreiten $\tau$ der Fälle? | sortieren, $\lceil n\tau \rceil$-ten Wert wählen; bei ganzzahligem $n\tau$ ist jeder Wert im Intervall zulässig | bei schweren Rändern sehr unsicher |
-| **Expektile** $\tau$ | Wo halten sich der Zug nach oben und nach unten die Waage? | gewichtetes Mittel mit Gewicht $\tau$ oben, $1-\tau$ unten, bis nichts mehr wechselt | liegt bei gleicher Stufe nur zufällig nah am Quantil (E8) |
+| **Expektile** $\tau$ | Wo halten sich der Zug nach oben und nach unten die Waage? | gewichtetes Mittel mit Gewicht $\tau$ oben, $1-\tau$ unten, bis nichts mehr wechselt | liegt bei gleicher Stufe nur an Kreuzungen oder bei Stufe 0,5 und symmetrischer Verteilung nah am Quantil (E8) |
             """
         )
 
@@ -478,19 +491,27 @@ st.markdown(
 st.markdown("---")
 
 with st.expander("📐 Mathematische Formulierung"):
+    # erklaerseite:lesehilfe:start (erzeugt von tools/set_demo_explainer.py (Website-Repo) aus tools/content/explainers/mittelwert-median-erklaert.json, nicht von Hand ändern)
     st.markdown(
         r"""
-**Lesehilfe.** *Gegeben:* Werte $x_1, \dots, x_n$ (Zeitstempel, Koordinaten, Lieferzeiten). *Gesucht:* eine Mitte $c$ bzw. die Genauigkeit, mit der der Rechner sie liefert.
+**Lesehilfe.** Gegeben sind Werte $x_1, \dots, x_n$ (Zeitstempel, Koordinaten, Lieferzeiten). Gesucht ist eine Mitte $c$ beziehungsweise die Genauigkeit, mit der der Rechner sie liefert.
 
 | Symbol | Bedeutung |
 |---|---|
 | $x_i$ | die Werte, $i = 1, \dots, n$ |
 | $\bar x$ | Mittel, $\bar x = \frac1n \sum_i x_i$ |
+| $c$ | die gesuchte Mitte |
 | $\tau$ | Stufe von Quantil und Expektile, $0 < \tau < 1$ |
 | $\mu,\ \sigma$ | Mittel und Streuung der Verteilung, $\theta = \mu\sqrt n/\sigma$ |
 | $\varepsilon$ | Rundungseinheit eines Zahlenformats ($2^{-24}$ bei float32, $2^{-53}$ bei float64) |
 | $d,\ \lVert\mu\rVert$ | Zahl der Lager und Abstand der wahren Mittel vom Nullpunkt |
 
+[Schritt für Schritt erklärt, mit Herleitung und Literatur](https://sebastianhanisch.net/mittelwert-median-erklaert.html#fachleute)
+        """
+    )
+    # erklaerseite:lesehilfe:end
+    st.markdown(
+        r"""
 **Mitten als Minimierer.**
 
 $$\bar x = \arg\min_c \sum_{i} (x_i - c)^2, \qquad \operatorname{med}(x) \in \arg\min_c \sum_{i} \lvert x_i - c\rvert.$$
@@ -523,7 +544,7 @@ es schlägt das Mittel für $\theta^2 < \frac{1+c}{1-c}$; das beste $c = \mu^2/(
 
 $$1 - e^{-\sigma^2/2}$$
 
-aus, unabhängig von $n$.
+aus (der Populationsmedian; der Stichproben-Median erreicht ihn für wachsendes $n$).
 
 **Summation.** Die fortlaufende Summe ist $s_k = \operatorname{fl}(s_{k-1} + x_k)$, wobei $\operatorname{fl}$ auf das Zahlenformat rundet (relativer Fehler höchstens $\varepsilon$ je Addition). Kahan-Summation führt einen Rest mit, Neumaier addiert ihn erst am Ende. Wie der Fehler mit $n$ wächst, ist hier nicht bewiesen, die Demo misst ihn.
 

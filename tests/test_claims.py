@@ -88,7 +88,7 @@ def test_h3_kahan_equals_the_floor_everywhere():
         for dist, orders in R.e2_order(fmt)["cells"].items():
             for order, methods in orders.items():
                 assert methods["Kahan"]["mean"] == methods["floor_sum"]["mean"], (fmt, dist, order)
-    has(f"({sci(c('float32', 'Kahan', N7)['mean'])} bei 10⁷)")
+    has(f"({sci(c('float32', 'Kahan', N7)['mean'])} bei 10⁷, Mittel über die vier Seeds)")
     has("Kahan = Untergrenze der Summe in allen fünf Größen, in beiden Formaten, in allen sechs Reihenfolge-Zellen und bei jedem μ/σ ab 1 (n = 10⁶); "
         "bei μ = 0 liegt Kahan höchstens das Dreifache über der Untergrenze, beide unter 10⁻⁷ Standardfehlern")
 
@@ -106,10 +106,14 @@ def test_h4_neumaier_is_worse_than_kahan_in_float32():
         r = R.e1_neumaier_share(n)
         assert r["better"] == 0 and r["worse"] + r["equal"] <= r["series"] == 20
         has(f"{r['worse']} von {r['series']} {label}")
-    has(f"in {R.e1_neumaier_share(2_000_000)['worse']} von 20 weiteren Reihen mit zwei Millionen Werten mehr als doppelt so ungenau")
+    has(f"in {R.e1_neumaier_share(1_000_000)['worse']} / {R.e1_neumaier_share(2_000_000)['worse']} / {R.e1_neumaier_share(5_000_000)['worse']} von 20 weiteren Reihen "
+        "(n = 10⁶ / 2·10⁶ / 5·10⁶) mehr als doppelt so ungenau, in keiner genauer")
     has(f"(bei n = 10⁶ in {R.e1_neumaier_share(1_000_000)['equal']} von 20 Reihen gleich)")
     has(f"liegt Neumaier schon bei {de(R.e2_ratio_cell('float32', 1e4, 'Neumaier')['mean'], 2)} Standardfehlern gegen {de(R.e2_ratio_cell('float32', 1e4, 'Kahan')['mean'], 2)} bei Kahan")
     assert R.e2_ratio_cell("float32", 1e4, "Neumaier")["mean"] > R.e2_ratio_cell("float32", 1e4, "Kahan")["mean"]
+    has(f"Bei μ/σ = 10⁴ (n = 10⁶) liegt Neumaier bei {de(R.e2_ratio_cell('float32', 1e4, 'Neumaier')['mean'], 2)} Standardfehlern gegen {de(R.e2_ratio_cell('float32', 1e4, 'Kahan')['mean'], 2)} bei Kahan, bei μ/σ ≤ 100 sind beide gleichauf")
+    for key in (1.0, 100.0):
+        assert R.e2_ratio_cell("float32", key, "Neumaier")["mean"] == pytest.approx(R.e2_ratio_cell("float32", key, "Kahan")["mean"], rel=0.01), key
 
 
 def test_h5_welford():
@@ -198,10 +202,12 @@ def test_h15_h16_james_stein():
     has(f"die Simulation liegt höchstens bei {de(biggest, 4)}")
     assert biggest < 1.002
     coords = {d: max((R.stein_cell("eine", d, nm)["koordinate1_pp"]["mean"], nm) for nm in X.STEIN_NORMS) for d in dims}
-    has(f"größtes Risiko des ersten Lagers (Einzelmittel 1): {de(coords[3][0], 2)} (d = 3) / {de(coords[5][0], 2)} (5) / {de(coords[10][0], 2)} (10) bei ‖μ‖ = 3 und {de(coords[50][0], 2)} (d = 50, ‖μ‖ = 8)")
+    has(f"größtes Risiko des ersten Lagers (Einzelmittel 1) mit Positive Part: {de(coords[3][0], 2)} (d = 3) / {de(coords[5][0], 2)} (5) / {de(coords[10][0], 2)} (10) bei ‖μ‖ = 3 und {de(coords[50][0], 2)} (d = 50, ‖μ‖ = 8)")
+    coords_js = {d: max(R.stein_cell("eine", d, nm)["koordinate1_js"]["mean"] for nm in X.STEIN_NORMS) for d in dims}
+    has(f"beim reinen James-Stein-Schätzer {de(coords_js[3], 2)} / {de(coords_js[5], 2)} / {de(coords_js[10], 2)} und {de(coords_js[50], 2)}; der")
     assert [coords[d][1] for d in dims] == [3.0, 3.0, 3.0, 8.0]
     has("in " + " / ".join(pct(R.stein_zero_share(d)) for d in dims) + " % der Läufe auf 0")
-    has(f"bis auf das {de(coords[50][0], 2)}-Fache** (d = 50, ‖μ‖ = 8)")
+    has(f"bis auf das {de(coords[50][0], 2)}-Fache** (d = 50, ‖μ‖ = 8; größter Wert im Raster der Normen 0 bis 20, ein Lager trägt das ganze μ")
     assert R.stein_cell("eine", 10, 5.0)["js"]["mean"] == pytest.approx(R.stein_cell("gleich", 10, 5.0)["js"]["mean"], abs=0.01)         # hängt nur von ‖μ‖ ab
 
 
@@ -251,7 +257,14 @@ def test_h21_h22_quantile_and_expectile():
     has("Lücke (Expektile − Quantil) / Quartilsabstand bei τ = 0,8: " + ", ".join(f"{name} {signed(R.gap_cell(lb, 0.8)['gap']['mean'])}" for name, lb in (
         ("Normal", "Normal"), ("Exponential", "Exponential"), ("Lognormal(0; 1)", "Lognormal(0; 1)"), ("Lognormal(0; 1,5)", "Lognormal(0; 1,5)"), ("Pareto(2,5)", "Pareto(2,5)"))))
     has(f"Exponential: {signed(R.gap_cell('Exponential', 0.5)['gap']['mean'])} bei τ = 0,5, {signed(R.gap_cell('Exponential', 0.99)['gap']['mean'])} bei τ = 0,99")
-    has(f"Bei τ = 0,8 reicht die Lücke von {signed(R.gap_cell('Normal', 0.8)['gap']['mean'])} (Normal) bis {signed(R.gap_cell('Lognormal(0; 1,5)', 0.8)['gap']['mean'])} (Lognormal(0; 1,5)) Quartilsabstände")
+    gaps_08 = {lb: R.gap_cell(lb, 0.8)["gap"]["mean"] for lb in (g[0] for g in X.GAP_DISTRIBUTIONS)}
+    assert min(gaps_08, key=gaps_08.get) == "Gleichverteilung" and max(gaps_08, key=gaps_08.get) == "Lognormal(0; 1,5)"
+    has(f"reicht sie bei τ = 0,8 von {signed(R.gap_cell('Gleichverteilung', 0.8)['gap']['mean'])} (Gleichverteilung) bis {signed(R.gap_cell('Lognormal(0; 1,5)', 0.8)['gap']['mean'])} (Lognormal(0; 1,5)) Quartilsabstände")
+    for lb in ("Normal", "Gleichverteilung", "t(3)"):                                                  # Symmetrie: nur bei τ = 0,5 nah beieinander
+        g5, g8 = R.gap_cell(lb, 0.5), R.gap_cell(lb, 0.8)
+        assert not g5["usable"] and abs(g5["gap"]["mean"]) <= 0.001 and g8["usable"] and abs(g8["gap"]["mean"]) > 0.1, lb
+    has("Bei τ = 0,5 ist die Lücke bei Normal, Gleichverteilung und t(3) von null nicht zu unterscheiden")
+    has(f"schon bei τ = 0,8 liegt sie bei {signed(R.gap_cell('Normal', 0.8)['gap']['mean'])} (Normal) und {signed(R.gap_cell('Gleichverteilung', 0.8)['gap']['mean'])} (Gleichverteilung)")
     c15 = R.gap_cell("Lognormal(0; 1,5)", 0.99)
     assert not c15["usable"]
     has(f"({signed(c15['gap']['mean'])} ± {de(c15['gap']['std'], 3)})")
@@ -273,6 +286,18 @@ def test_e1_tables():
         for m, label in names:
             has(f"| {label} | " + " | ".join(sci(c(fmt, m, n)["mean"]) for n in X.E1_CHECKS) + " |")
     assert c("float32", "Kahan mit Rest", 100_000)["mean"] == 0 and c("float32", "Kahan", 100_000)["mean"] > 0
+    # float64: Kahan, Kahan mit Rest und Neumaier an der Untergrenze der Summe; numpy.sum, Binärbaum und verschoben liegen in einzelnen Spalten darüber, naiv und Welford in allen
+    for n in X.E1_CHECKS:
+        floor_sum, floor_mean = c("float64", "floor_sum", n)["mean"], c("float64", "floor_mean", n)["mean"]
+        for m in ("Kahan", "Kahan mit Rest", "Neumaier"):
+            assert c("float64", m, n)["mean"] == pytest.approx(floor_sum, rel=0.01), (m, n)
+        assert c("float64", "naiv", n)["mean"] > 3 * floor_sum and c("float64", "Welford", n)["mean"] > 3 * floor_mean, n
+    above = [(m, n) for m in ("numpy.sum", "Binärbaum") for n in X.E1_CHECKS if c("float64", m, n)["mean"] > 1.5 * c("float64", "floor_sum", n)["mean"]]
+    above += [("verschoben", n) for n in X.E1_CHECKS if c("float64", "verschoben", n)["mean"] > 1.5 * c("float64", "floor_mean", n)["mean"]]
+    assert sorted(above) == [("Binärbaum", N7), ("numpy.sum", 1_000_000), ("verschoben", N7)], above
+    has(f"`numpy.sum` ({sci(c('float64', 'numpy.sum', 1_000_000)['mean'])} gegen {sci(c('float64', 'floor_sum', 1_000_000)['mean'])} bei 10⁶), "
+        f"Binärbaum ({sci(c('float64', 'Binärbaum', N7)['mean'])} gegen {sci(c('float64', 'floor_sum', N7)['mean'])} bei 10⁷) und "
+        f"verschoben ({sci(c('float64', 'verschoben', N7)['mean'])} gegen {sci(c('float64', 'floor_mean', N7)['mean'])} bei 10⁷) liegen in einzelnen Spalten darüber")
     has("Kahan mit Rest hält die Summe in float32 bis n = 10⁵ vollständig (Fehler 0), danach fast")
     for n in (1000, 10_000, 100_000):
         assert c("float32", "Kahan mit Rest", n)["mean"] == 0.0

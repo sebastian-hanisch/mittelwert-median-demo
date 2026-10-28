@@ -220,7 +220,7 @@ def verdict_e1_mechanism(cells: list[dict]) -> tuple[str, str]:
     share = min(c["share_1024"] for c in cells)
     worst = max(abs(c["predicted_mean"] - c["measured_mean"]) for c in cells)
     return "info", (f"Ursache: Die Summe erreicht 2²⁹ beim Wert Nr. {num(min(first), 0)} bis {num(max(first), 0)}. Von da an beträgt der Abstand der float32-Zahlen 64, "
-                    f"und jeder Summand um 1 000 wird auf genau 1 024 gerundet: {"In allen übrigen Schritten" if share >= 1.0 else "In mindestens " + pct(share, 5) + " % der übrigen Schritte"} wächst die Summe um genau 1 024. Das Rauschen der Daten verschwindet aus der Summe. "
+                    f"und bei Werten N(1 000; 1) wird jeder Summand auf 1 024 gerundet: {"In allen übrigen Schritten" if share >= 1.0 else "In mindestens " + pct(share, 5) + " % der übrigen Schritte"} wächst die Summe um genau 1 024. Das Rauschen der Daten verschwindet aus der Summe. "
                     f"Vorhersage (Summe bei 2²⁹ plus 1 024 je Schritt) und Messung unterscheiden sich im Endmittel um höchstens {sci(worst)}.")
 
 
@@ -336,7 +336,7 @@ def verdict_e5_coordinate(max_risk: float, d: int, at_norm: float) -> tuple[str,
 def verdict_e6_gap(sigma: float, gap: float, below: float, miss_median: float, top10: float) -> tuple[str, str]:
     """E6: Lognormal(0; σ): Mittelwert/Median, Anteil der Werte unter dem Mittelwert, ausgelassener Anteil beim Median als Schätzer des Mittelwerts, Summenanteil der größten 10 %."""
     return "info", (f"σ = {de(sigma, 1)}: Der Mittelwert liegt das {de(gap, 2)}-Fache über dem Median; {pct(below)} % der Werte liegen unter dem Mittelwert, und die größten 10 % tragen {pct(top10)} % der Summe. "
-                    f"Der Median als Schätzer des Mittelwerts lässt {pct(miss_median)} % aus – bei jedem n.")
+                    f"Der Median als Schätzer des Mittelwerts lässt {pct(miss_median)} % aus (der Populationsmedian; der Stichproben-Median erreicht ihn für wachsendes n).")
 
 
 def verdict_e6_targets(sigma: float, mean_to_mean: float, median_to_mean: float, mean_to_median: float, median_to_median: float, n: int) -> tuple[str, str]:
