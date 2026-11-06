@@ -530,7 +530,7 @@ $$\sum_i \lVert x_i - c\rVert^2 = \sum_i \lVert x_i - \bar x\rVert^2 + n\,\lVert
 
 $$SC_n(t) = n\,\big(T(x_1, \dots, x_{n-1}, t) - T(x_1, \dots, x_{n-1})\big).$$
 
-Beim Mittel ist $SC_n(t) = t - \bar x_{n-1}$; beim Median bei Normalverteilung strebt sie gegen $\sqrt{\pi/2}$ für $n \to \infty$ und $\lvert t\rvert$ groß.
+Beim Mittel ist $SC_n(t) = t - \bar x_{n-1}$; beim Median bei Normalverteilung strebt sie gegen $\operatorname{sign}(t)\,\sqrt{\pi/2}$, also $\pm\sqrt{\pi/2}$ mit dem Vorzeichen von $t$, für $n \to \infty$ und $\lvert t\rvert$ groß.
 
 **Verkleinertes Mittel.** Für $c\,\bar x$ gilt
 
